@@ -94,9 +94,10 @@ router.post('/', authGuard, async (req: AuthenticatedRequest, res: Response, nex
 });
 
 // İlanı güncelle (Yalnızca Sahibi)
-router.patch('/:id', authGuard, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/:id', authGuard, async (req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction) => {
   try {
-    const itemId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const rawId = req.params?.id;
+    const itemId = Array.isArray(rawId) ? rawId[0] : rawId;
     const updated = await itemService.updateItem(req.user!.id, String(itemId), req.body);
     res.json({ success: true, data: updated, message: 'İlan başarıyla güncellendi.' });
   } catch (error) {
@@ -105,9 +106,10 @@ router.patch('/:id', authGuard, async (req: AuthenticatedRequest, res: Response,
 });
 
 // İlanı sil (Yalnızca Sahibi)
-router.delete('/:id', authGuard, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.delete('/:id', authGuard, async (req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction) => {
   try {
-    const itemId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const rawId = req.params?.id;
+    const itemId = Array.isArray(rawId) ? rawId[0] : rawId;
     await itemService.deleteItem(req.user!.id, String(itemId));
     res.json({ success: true, message: 'İlan başarıyla silindi.' });
   } catch (error) {

@@ -2,9 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../../core/errors/AppError';
 
-export interface AuthenticatedRequest extends Request {
+export type AuthenticatedRequest<
+  P = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any
+> = Request<P, ResBody, ReqBody, ReqQuery> & {
   user?: { id: string };
-}
+};
 
 export const authGuard = (req: AuthenticatedRequest, _res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
