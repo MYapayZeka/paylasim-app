@@ -1,0 +1,152 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ItemCategory {
+  TOOLS
+  CAMPING
+  ELECTRONICS
+  HOME_GARDEN
+  SPORTS
+  VEHICLE_ACCESSORIES
+  OTHER
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+model User {
+  id              String        @id @default(uuid())
+  email           String        @unique
+  fullName        String
+  phoneNumber     String?
+  iban            String?
+  avatarUrl       String?
+  rating          Float         @default(5.0)
+  ratingCount     Int           @default(0)
+  passwordHash    String
+  role            Role          @default(USER)
+  isBlocked       Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  items           Item[]
+  borrows         Transaction[] @relation("BorrowerRelation")
+  reportsSent     Report[]      @relation("ReportSender")
+  reportsRecv     Report[]      @relation("ReportTarget")
+  messagesSent    Message[]
+  reviewsReceived Review[]      @relation("UserReceivedReviews")
+  reviewsGiven    Review[]      @relation("UserGivenReviews")
+}
+
+model Item {
+  id             String         @id @default(uuid())
+  ownerId        String
+  title          String
+  description    String
+  category       ItemCategory   @default(OTHER)
+  pricePerDay    Float
+  deposit        Float          @default(0)
+  realLatitude   Float
+  realLongitude  Float
+  fuzzyLatitude  Float
+  fuzzyLongitude Float
+  addressText    String
+  images         String[]
+  isActive       Boolean        @default(true)
+  rating         Float          @default(5.0)
+  ratingCount    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  owner          User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  reviews        Review[]
+}
+
+model Transaction {
+  id                String            @id @default(uuid())
+  itemId            String
+  borrowerId        String
+  startDate         DateTime
+  endDate           DateTime
+  totalPrice        Float
+  deposit           Float             @default(0)
+  status            TransactionStatus @default(PENDING)
+  qrToken           String            @default(uuid())
+  deliveryPin       String?
+  paymentMethod     String?
+  ownerConfirmed    Boolean           @default(false)
+  borrowerConfirmed Boolean           @default(false)
+  protocolAccepted  Boolean           @default(false)
+  protocolAcceptedAt DateTime?
+  earlyReturnRequested Boolean        @default(false)
+  earlyReturnRequestedAt DateTime?
+  returnPin         String?
+  archivedByUserIds String[]          @default([])
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  item              Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  borrower          User              @relation("BorrowerRelation", fields: [borrowerId], references: [id], onDelete: Cascade)
+  messages          Message[]
+  review            Review?
+}
+
+model Message {
+  id            String      @id @default(uuid())
+  transactionId String
+  senderId      String
+  content       String
+  status        String      @default("SENT")
+  readAt        DateTime?
+  createdAt     DateTime    @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  sender        User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id           String   @id @default(uuid())
+  reporterId   String
+  targetUserId String
+  reason       String
+  details      String?
+  createdAt    DateTime @default(now())
+
+  reporter     User     @relation("ReportSender", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser   User     @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id            String      @id @default(uuid())
+  transactionId String      @unique
+  reviewerId    String
+  targetUserId  String
+  itemId        String
+  itemRating    Int         @default(5)
+  ownerRating   Int         @default(5)
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  reviewer      User        @relation("UserGivenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  targetUser    User        @relation("UserReceivedReviews", fields: [targetUserId], references: [id], onDelete: Cascade)
+  item          Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}

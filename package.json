@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build:apk": "npm --prefix mobile run build:apk"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.10.0",
+    "isomorphic-git": "^1.43.3"
+  }
+}
